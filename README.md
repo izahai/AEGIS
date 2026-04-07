@@ -1,6 +1,6 @@
 <div align="center">
       
-# <br> AEGIS: Retention-Data-Free <br> Diffusion Concept Erasure Beyond the Robustness-Retention Trade-off
+# <br> AEGIS: Adversarial Target-Guided Retention-Data-Free Robust Concept Erasure from Diffusion Models
 
 <div align="left">
 
