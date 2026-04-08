@@ -17,7 +17,10 @@ from contextlib import contextmanager, nullcontext
 from ldm.util import instantiate_from_config
 from ldm.models.diffusion.ddim import DDIMSampler
 from ldm.models.diffusion.plms import PLMSSampler
-from ldm.models.diffusion.dpm_solver import DPMSolverSampler
+try:
+    from ldm.models.diffusion.dpm_solver import DPMSolverSampler
+except Exception:
+    DPMSolverSampler = None
 
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from transformers import AutoFeatureExtractor
@@ -48,7 +51,12 @@ def numpy_to_pil(images):
 
 def load_model_from_config(config, ckpt, verbose=False):
     print(f"Loading model from {ckpt}")
-    pl_sd = torch.load(ckpt, map_location="cpu")
+    # PyTorch >=2.6 defaults to weights_only=True, which breaks older SD .ckpt files.
+    try:
+        pl_sd = torch.load(ckpt, map_location="cpu", weights_only=False)
+    except TypeError:
+        # Backward compatibility for older PyTorch versions without weights_only arg.
+        pl_sd = torch.load(ckpt, map_location="cpu")
     if "global_step" in pl_sd:
         print(f"Global Step: {pl_sd['global_step']}")
     sd = pl_sd["state_dict"]
@@ -249,6 +257,11 @@ def main():
     model = model.to(device)
 
     if opt.dpm_solver:
+        if DPMSolverSampler is None:
+            raise ImportError(
+                "DPMSolverSampler is not available in this environment/repo. "
+                "Run without --dpm_solver (DDIM default), or use --plms."
+            )
         sampler = DPMSolverSampler(model)
     elif opt.plms:
         sampler = PLMSSampler(model)
